@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retro Flip Clock Indonesia</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: #111;
+      color: #f5f5dc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    /* Flip Clock Container */
+    .flip-clock {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .flip-card {
+      position: relative;
+      width: 90px;
+      height: 120px;
+      background: #222;
+      color: #f5f5dc;
+      font-size: 70px;
+      font-weight: bold;
+      text-align: center;
+      line-height: 120px;
+      border-radius: 6px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+
+    .flip-card::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: rgba(255,255,255,0.2);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+      transform: translateY(-50%);
+    }
+
+    .flip-card span {
+      display: block;
+      position: relative;
+      z-index: 2;
+      text-shadow: 0 0 6px rgba(245,245,220,0.5);
+    }
+
+    .separator {
+      font-size: 70px;
+      line-height: 120px;
+      color: #f5f5dc;
+      text-shadow: 0 0 8px rgba(245,245,220,0.6);
+    }
+
+    /* Tanggal */
+    .date {
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+
+    /* Kalender */
+    .calendar {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+      color: #f5f5dc;
+      text-align: center;
+    }
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .calendar table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .calendar th, .calendar td {
+      padding: 6px;
+      text-align: center;
+    }
+    .calendar th {
+      color: #bbb;
+    }
+    .calendar .today {
+      background: #f5f5dc;
+      color: #111;
+      border-radius: 50%;
+      padding: 5px;
+    }
+    .calendar button {
+      background: #333;
+      color: #f5f5dc;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .calendar button:hover {
+      background: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="flip-clock" id="clock">
+    <div class="flip-card"><span id="hours">00</span></div>
+    <div class="separator">:</div>
+    <div class="flip-card"><span id="minutes">00</span></div>
+    <div class="separator">:</div>
+    <div class="flip-card"><span id="seconds">00</span></div>
+  </div>
+
+  <div class="date" id="date"></div>
+
+  <div class="calendar">
+    <div class="calendar-header">
+      <button onclick="prevMonth()">◀</button>
+      <div id="monthYear"></div>
+      <button onclick="nextMonth()">▶</button>
+    </div>
+    <table id="calendarBody"></table>
+    <button style="margin-top:10px;" onclick="goToday()">Hari Ini</button>
+  </div>
+
+  <script>
+    function updateClock() {
+      const now = new Date();
+      const options = { timeZone: 'Asia/Jakarta' };
+
+      const hours = now.toLocaleString('id-ID', { hour: '2-digit', hour12: false, ...options });
+      const minutes = now.toLocaleString('id-ID', { minute: '2-digit', ...options });
+      const seconds = now.toLocaleString('id-ID', { second: '2-digit', ...options });
+
+      document.getElementById('hours').textContent = hours;
+      document.getElementById('minutes').textContent = minutes;
+      document.getElementById('seconds').textContent = seconds;
+
+      const dateString = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Jakarta' });
+      document.getElementById('date').textContent = dateString;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Kalender
+    let currentMonth = new Date().getMonth();
+    let currentYear = new Date().getFullYear();
+
+    function renderCalendar(month, year) {
+      const monthYear = document.getElementById('monthYear');
+      const calendarBody = document.getElementById('calendarBody');
+      const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+      monthYear.textContent = months[month] + ' ' + year;
+      calendarBody.innerHTML = '';
+
+      const firstDay = new Date(year, month).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      let date = 1;
+
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      const daysRow = document.createElement('tr');
+      const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+
+      for (let d of days) {
+        let th = document.createElement('th');
+        th.textContent = d;
+        daysRow.appendChild(th);
+      }
+      thead.appendChild(daysRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      for (let i = 0; i < 6; i++) {
+        const row = document.createElement('tr');
+        for (let j = 0; j < 7; j++) {
+          if (i === 0 && j < firstDay) {
+            row.appendChild(document.createElement('td'));
+          } else if (date > daysInMonth) {
+            break;
+          } else {
+            const td = document.createElement('td');
+            td.textContent = date;
+            if (
+              date === new Date().getDate() &&
+              year === new Date().getFullYear() &&
+              month === new Date().getMonth()
+            ) {
+              td.classList.add('today');
+            }
+            row.appendChild(td);
+            date++;
+          }
+        }
+        tbody.appendChild(row);
+      }
+      table.appendChild(tbody);
+      calendarBody.appendChild(table);
+    }
+
+    function prevMonth() {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      renderCalendar(currentMonth, currentYear);
+    }
+
+    function nextMonth() {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar(currentMonth, currentYear);
+    }
+
+    function goToday() {
+      currentMonth = new Date().getMonth();
+      currentYear = new Date().getFullYear();
+      renderCalendar(currentMonth, currentYear);
+    }
+
+    renderCalendar(currentMonth, currentYear);
+  </script>
+</body>
+</html>
